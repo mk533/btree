@@ -20,7 +20,6 @@ struct node {
 
 void Sort(struct node *root)
 {
-    printf("at 23\n");
     struct word_meaning temp;
     int i,j;
     for (i = 0; i < root->count - 1 ; i++)
@@ -29,7 +28,6 @@ void Sort(struct node *root)
         {
             if (strcmp(root->pair[i].word, root->pair[j].word) > 0)
             {
-           //     printf("%s %s \n",root->pair[i].word,root->pair[j].word);
                 temp = root->pair[i];
                 root->pair[i] = root->pair[j];
                 root->pair[j] = temp;
@@ -99,38 +97,45 @@ void split_root(FILE *fptr,struct node *root)
 void Insert(FILE *fptr, char *word, char *mean)
 {
     int i,j;
-    fseek(fptr,0,SEEK_SET);
-    struct node *root = (struct node *) malloc(sizeof(struct node));
-    fread(root, sizeof(struct node), 1, fptr);
     
-   // fseek(fptr,0,SEEK_END);
-    // printf("Word: %s\t Meaning: %s\t block no: %d   count : %d\n", root->pair[0].word,root->pair[0].meaning, root->blockno,root->count);
-    if(root->count == order)
+    //after write back to HD, reset fp to beginning of node.
+    fseek(fptr,0,SEEK_SET);
+    
+    //create temp node in memory to read from HD
+    struct node *temp = (struct node *) malloc(sizeof(struct node));
+    fread(temp, sizeof(struct node), 1, fptr);
+    
+    if(temp->count == order)
     {
         printf("overflow\n");
-        split_root(fptr,root);
+        split_root(fptr,temp);
         
     } else {
         
-        printf("-->%d\n",root->count);
-        strcpy(root->pair[root->count].word , word);
-        strcpy(root->pair[root->count].meaning , mean);
-        root->count++;
+        //copy word meaning pair to temp node 
+        printf("Keys -->%d\n",temp->count);
+        strcpy(temp->pair[temp->count].word , word);
+        strcpy(temp->pair[temp->count].meaning , mean);
+        temp->count++;
+        printf("Count -->%d\n",temp->count);
         
-        printf("-->%d\n",root->count);
-        Sort(root);
+        Sort(temp);
+        
+        //write back to HD from temp
         fseek(fptr,0,SEEK_SET);
-        fwrite(root, sizeof(struct node), 1, fptr);
+        fwrite(temp, sizeof(struct node), 1, fptr);
         
     }
+    
+    //Printing pairs
     printf("\n-----------------------------------\n");
     
     fseek(fptr,0,SEEK_SET);
-    fread(root, sizeof(struct node), 1, fptr);
+    fread(temp, sizeof(struct node), 1, fptr);
    for (i = 0 ; i < order ; i++)
     {
         
-            printf("Word: %s\t Meaning: %s\t block no: %d   count : %d\n", root->pair[i].word,root->pair[i].meaning, root->blockno,root->count);
+            printf("Word: %s\t Meaning: %s\t block no: %d   count : %d\n", temp->pair[i].word,temp->pair[i].meaning, temp->blockno,temp->count);
         
     }
     
@@ -141,41 +146,26 @@ int main()
     
     FILE *fptr;
     
-    printf("\nsize of node %lu\n",sizeof(struct node));
+    //printf("\nsize of node %lu\n",sizeof(struct node));
     fptr = fopen("dictionary","rb+");
 
     if(fptr == NULL)
     {
-       // printf("Error \n");
-        //return 0;
+       // Empty Binary file, so creating node in memory
        struct node *root = (struct node *)malloc(sizeof(struct node));
         root->isleaf = 1;
         root->blockno = 0;
         root->parent_blockno = -1;
-       // strcpy(root->pair[0].word ,"I");
-        //strcpy(root->pair[0].meaning ,"I is pronoun");
         root->count = 0;
       
         
         fptr = fopen("dictionary","wb+");
-        //printf("at 37 \n");
+        //create and write back to the file on HD
         fwrite(root, sizeof(struct node), 1, fptr);
-        
-        //fseek(fptr,0,SEEK_SET);
-        
-        //printf("at 42 \n");
-        
-        //fread(root, sizeof(struct node), 1, fptr);
-        
-      // printf("Word: %s\t Meaning: %s\t block no: %d", root->pair[0].word,root->pair[0].meaning, root->blockno);
-        
-        //printf("at 43");
-      //  fclose(fptr);
+
     }
-    
-     //   printf("Word: %s\nMeaning:%s\nblock no: %d\ncount: %d \n", root->pair[0].word,root->pair[0].meaning, root->blockno,root->count);
-        
-       
+         
+       // to accept word, meaning pair and write it in node
         char w[99],m[99];
         scanf("%s",w);
         scanf("%s",m);
